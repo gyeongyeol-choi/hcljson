@@ -112,6 +112,8 @@ func flattenObjectType(
 			}
 			return items, frontier
 		} else {
+			// MEMO : variable의 경우 하위 속성들이 object로만 이루어져있어도 역변환 결과물이 variable A B {} 형태로 나오면 안됨.
+			// MEMO : 무조건 variable A {} 형태로 나오게 하기 위해 아래 구문 추가함.
 			if len(item.Keys) > 1 && item.Keys[0].Token.Text == "\"variable\"" {
 				if !contains(items, item) {
 					items = append(items, item)
