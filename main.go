@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/hashicorp/hcl/v2/hclparse"
-	"github.com/mjsso/hcljson/convert"
+	"github.com/tmax-cloud/hcljson/convert"
 )
 
 const (
