@@ -19,4 +19,5 @@ var parser = hclparse.NewParser()
 func main() {
 	js.Module.Get("exports").Set("HclToJson", convert.HclToJson)
 	js.Module.Get("exports").Set("JsonToHcl", convert.JsonToHcl)
+	js.Module.Get("exports").Set("HclToHcl", convert.HclToHcl)
 }
