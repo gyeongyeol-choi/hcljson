@@ -279,7 +279,10 @@ func (p *printer) objectItem(o *ast.ObjectItem) []byte {
 
 		// reach end of key
 		if o.Assign.IsValid() && i == len(o.Keys)-1 && len(o.Keys) == 1 {
-			buf.WriteString("=")
+			// MEMO : terraform 키워드에선 = 표시 있으면 안됨
+			if o.Keys[0].Token.Text != "\"terraform\"" {
+				buf.WriteString("=")
+			}
 			buf.WriteByte(blank)
 		}
 	}
