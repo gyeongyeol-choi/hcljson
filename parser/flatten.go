@@ -111,6 +111,13 @@ func flattenObjectType(
 				}
 			}
 			return items, frontier
+		} else {
+			if len(item.Keys) > 1 && item.Keys[0].Token.Text == "\"variable\"" {
+				if !contains(items, item) {
+					items = append(items, item)
+				}
+				return items, frontier
+			}
 		}
 	}
 
