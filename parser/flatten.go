@@ -6,6 +6,19 @@ import (
 
 // MEMO : https://github.com/hashicorp/hcl/tree/hcl1/json/parser가 원본. 코드 수정해서 사용하기 위해 카피 함.
 
+// MEMO : 임시 처리. 추후 수정 예정.
+var independentBlocksKeys = []string{"\"egress\"", "\"ingress\"", "\"filter\""}
+
+func stringArrayContains(items []string, item string) bool {
+	for _, v := range items {
+		if v == item {
+			return true
+		}
+	}
+
+	return false
+}
+
 // flattenObjects takes an AST node, walks it, and flattens
 func flattenObjects(node ast.Node) {
 	ast.Walk(node, func(n ast.Node) (ast.Node, bool) {
@@ -55,13 +68,16 @@ func flattenListType(
 		items = append(items, item)
 		return items, frontier
 	}
-
-	// All the elements of this object must also be objects!
-	for _, subitem := range ot.List {
-		// MEMO : ast.ObjectType으로 하면 object들로 이루어진 배열일 때 여기에서 append안돼서 정상변환 안돼서 이렇게 수정함.
-		if _, ok := subitem.(*ast.ListType); !ok {
-			items = append(items, item)
-			return items, frontier
+	// MEMO : egress, ingress 속성의 경우 json상에선 배열형태이지만, 역변환 tf내용은 각각의 block으로 들어가야 함.
+	// MEMO : 그 땐 배열화해주는 부분 타지 않도록 조건문 추가함
+	if !stringArrayContains(independentBlocksKeys, item.Keys[0].Token.Text) {
+		// All the elements of this object must also be objects!
+		for _, subitem := range ot.List {
+			// MEMO : ast.ObjectType으로 하면 object들로 이루어진 배열일 때 여기에서 append안돼서 정상변환 안돼서 이렇게 수정함.
+			if _, ok := subitem.(*ast.ListType); !ok {
+				items = append(items, item)
+				return items, frontier
+			}
 		}
 	}
 

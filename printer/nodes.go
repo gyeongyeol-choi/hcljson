@@ -22,6 +22,19 @@ var (
 	unindent = []byte("\uE123") // in the private use space
 )
 
+// MEMO : 임시 처리. 추후 수정 예정.
+var blockWithoutEqualCharKeys = []string{"\"terraform\"", "\"health_check\"", "\"listener\"", "\"egress\"", "\"ingress\"", "\"route\"", "\"filter\""}
+
+func stringArrayContains(items []string, item string) bool {
+	for _, v := range items {
+		if v == item {
+			return true
+		}
+	}
+
+	return false
+}
+
 type printer struct {
 	cfg  Config
 	prev token.Pos
@@ -279,8 +292,11 @@ func (p *printer) objectItem(o *ast.ObjectItem) []byte {
 
 		// reach end of key
 		if o.Assign.IsValid() && i == len(o.Keys)-1 && len(o.Keys) == 1 {
-			// MEMO : terraform 키워드에선 = 표시 있으면 안됨
-			if o.Keys[0].Token.Text != "\"terraform\"" {
+			// MEMO : block 정의에 "=" 표시 있으면 안되는 키워드들 예외처리함
+			if getValType(o.Val) == "ObjectType" {
+				fmt.Println("오브젝트 ", o.Keys[0])
+			}
+			if !stringArrayContains(blockWithoutEqualCharKeys, o.Keys[0].Token.Text) {
 				buf.WriteString("=")
 			}
 			buf.WriteByte(blank)
@@ -297,6 +313,34 @@ func (p *printer) objectItem(o *ast.ObjectItem) []byte {
 	}
 
 	return buf.Bytes()
+}
+
+func getValType(n interface{}) string {
+	switch t := n.(type) {
+	case *ast.File:
+		return "File"
+	case *ast.ObjectList:
+		fmt.Println("\033[1;33m[ObjectList]\033[0m", t.Items[0].Keys[0])
+		return "ObjectList"
+	case *ast.ObjectKey:
+		fmt.Println("\033[1;33m[ObjectKey]\033[0m", t.Token.Text)
+		return "ObjectKey"
+	case *ast.ObjectItem:
+		fmt.Println("\033[1;35m[ObjectItem]\033[0m", t.Keys[0].Token.Text)
+		return "ObjectItem"
+	case *ast.LiteralType:
+		fmt.Println("\033[1;33m[LiteralType]\033[0m", t.Token.Text)
+		return "LiteralType"
+	case *ast.ListType:
+		fmt.Println("\033[1;33m[ListType]\033[0m", t.List)
+		return "ListType"
+	case *ast.ObjectType:
+		fmt.Println("\033[1;36m[ObjectType]\033[0m", t.List.Items[0].Keys[0])
+		return "ObjectType"
+	default:
+		fmt.Printf(" unknown type: %T\n", n)
+		return "Unkown Type"
+	}
 }
 
 // objectType returns the printable HCL form of an object type. An object type
