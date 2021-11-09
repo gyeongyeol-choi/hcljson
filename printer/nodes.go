@@ -292,10 +292,12 @@ func (p *printer) objectItem(o *ast.ObjectItem) []byte {
 
 		// reach end of key
 		if o.Assign.IsValid() && i == len(o.Keys)-1 && len(o.Keys) == 1 {
-			// MEMO : block 정의에 "=" 표시 있으면 안되는 키워드들 예외처리함
 			if getValType(o.Val) == "ObjectType" {
+				// MEMO : 이런식으로 타입 체크 할 수 있다는 예시구문
 				fmt.Println("오브젝트 ", o.Keys[0])
 			}
+			// MEMO : block 정의에 "=" 표시 있으면 안되는 키워드들 예외처리함
+			// TODO : cmp-studio로부터 각 필드 타입에 대해 정리된 스키마 json을 넘겨받아 해당 json을 조회해 타입을 구별하여 = 표시 붙여주도록 추가 구현하기
 			if !stringArrayContains(blockWithoutEqualCharKeys, o.Keys[0].Token.Text) {
 				buf.WriteString("=")
 			}

@@ -70,6 +70,7 @@ func flattenListType(
 	}
 	// MEMO : egress, ingress 속성의 경우 json상에선 배열형태이지만, 역변환 tf내용은 각각의 block으로 들어가야 함.
 	// MEMO : 그 땐 배열화해주는 부분 타지 않도록 조건문 추가함
+	// TODO : cmp-studio로부터 각 필드 타입에 대해 정리된 스키마 json을 넘겨받아 해당 json을 조회해 타입을 구별하여 = 표시 붙여주도록 추가 구현하기
 	if !stringArrayContains(independentBlocksKeys, item.Keys[0].Token.Text) {
 		// All the elements of this object must also be objects!
 		for _, subitem := range ot.List {

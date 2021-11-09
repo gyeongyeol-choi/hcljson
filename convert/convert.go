@@ -45,7 +45,7 @@ func File(file *hcl.File) ([]byte, error) {
 		return nil, fmt.Errorf("convert file: %w", err)
 	}
 
-	// MJ : json marshall할 때 encoder의 옵션 escapehtml을 false로 설정.
+	// MEMO : json marshall할 때 encoder의 옵션 escapehtml을 false로 설정.
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
