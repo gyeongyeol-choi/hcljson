@@ -22,7 +22,7 @@ var (
 	unindent = []byte("\uE123") // in the private use space
 )
 
-// MEMO : 임시 처리. 추후 수정 예정.
+// TODO : 임시 처리. 추후 수정 예정.
 var blockWithoutEqualCharKeys = []string{"\"terraform\"", "\"health_check\"", "\"listener\"", "\"egress\"", "\"ingress\"", "\"route\"", "\"filter\""}
 
 func stringArrayContains(items []string, item string) bool {
