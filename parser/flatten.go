@@ -6,7 +6,7 @@ import (
 
 // MEMO : https://github.com/hashicorp/hcl/tree/hcl1/json/parser가 원본. 코드 수정해서 사용하기 위해 카피 함.
 
-// MEMO : 임시 처리. 추후 수정 예정.
+// TODO : 임시 처리. 추후 수정 예정.
 var independentBlocksKeys = []string{"\"egress\"", "\"ingress\"", "\"filter\""}
 
 func stringArrayContains(items []string, item string) bool {
