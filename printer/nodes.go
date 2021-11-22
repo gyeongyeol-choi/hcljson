@@ -121,14 +121,14 @@ func (p *printer) collectComments(node ast.Node) {
 }
 
 // output prints creates b printable HCL output and returns it.
-func (p *printer) output(n interface{}) []byte {
+func (p *printer) output(n interface{}, typeSchema map[string]interface{}) []byte {
 	var buf bytes.Buffer
 
 	switch t := n.(type) {
 	case *ast.File:
 		// File doesn't trace so we add the tracing here
 		defer un(trace(p, "File"))
-		return p.output(t.Node)
+		return p.output(t.Node, typeSchema)
 	case *ast.ObjectList:
 		defer un(trace(p, "ObjectList"))
 		var index int
@@ -185,7 +185,7 @@ func (p *printer) output(n interface{}) []byte {
 				break
 			}
 
-			buf.Write(p.output(t.Items[index]))
+			buf.Write(p.output(t.Items[index], typeSchema))
 			if index != len(t.Items)-1 {
 				// Always write a newline to separate us from the next item
 				buf.WriteByte(newline)
@@ -218,16 +218,16 @@ func (p *printer) output(n interface{}) []byte {
 	case *ast.ObjectItem:
 		p.prev = t.Pos()
 		fmt.Println("\033[1;35m[ObjectItem]\033[0m", t.Keys[0].Token.Text)
-		buf.Write(p.objectItem(t))
+		buf.Write(p.objectItem(t, typeSchema))
 	case *ast.LiteralType:
 		fmt.Println("\033[1;33m[LiteralType]\033[0m", t.Token.Text)
 		buf.Write(p.literalType(t))
 	case *ast.ListType:
 		fmt.Println("\033[1;33m[ListType]\033[0m", t.List)
-		buf.Write(p.list(t))
+		buf.Write(p.list(t, typeSchema))
 	case *ast.ObjectType:
 		fmt.Println("\033[1;36m[ObjectType]\033[0m", t.List.Items[0].Keys[0])
-		buf.Write(p.objectType(t))
+		buf.Write(p.objectType(t, typeSchema))
 	default:
 		fmt.Printf(" unknown type: %T\n", n)
 	}
@@ -260,7 +260,7 @@ func (p *printer) literalType(lit *ast.LiteralType) []byte {
 // objectItem returns the printable HCL form of an object item. An object type
 // starts with one/multiple keys and has a value. The value might be of any
 // type.
-func (p *printer) objectItem(o *ast.ObjectItem) []byte {
+func (p *printer) objectItem(o *ast.ObjectItem, typeSchema map[string]interface{}) []byte {
 	defer un(trace(p, fmt.Sprintf("ObjectItem: %s", o.Keys[0].Token.Text)))
 	var buf bytes.Buffer
 
@@ -287,25 +287,30 @@ func (p *printer) objectItem(o *ast.ObjectItem) []byte {
 		} else {
 			rawKey = k.Token.Text
 		}
+
+		var objectType string = ""
+
+		// MEMO : 스키마 조회를 위한 **##** 구분자 들어간 키값 들어왔을 때, 가장 마지막 단어만 실제 key로 지정
+		if strings.Contains(rawKey, "**##**") {
+			objectType = typeSchema[rawKey].(string)
+			var strSplit = strings.Split(rawKey, "**##**")
+			rawKey = strSplit[len(strSplit)-1]
+		}
+
 		buf.WriteString(rawKey)
 		buf.WriteByte(blank)
 
 		// reach end of key
 		if o.Assign.IsValid() && i == len(o.Keys)-1 && len(o.Keys) == 1 {
-			if getValType(o.Val) == "ObjectType" {
-				// MEMO : 이런식으로 타입 체크 할 수 있다는 예시구문
-				fmt.Println("오브젝트 ", o.Keys[0])
-			}
-			// MEMO : block 정의에 "=" 표시 있으면 안되는 키워드들 예외처리함
-			// TODO : cmp-studio로부터 각 필드 타입에 대해 정리된 스키마 json을 넘겨받아 해당 json을 조회해 타입을 구별하여 = 표시 붙여주도록 추가 구현하기
-			if !stringArrayContains(blockWithoutEqualCharKeys, o.Keys[0].Token.Text) {
+			// MEMO : object타입일 땐 = 표시 없어야 됨. 그 외의 type들이나 typeSchema에 정의안된 필드들은 = 붙여줌.
+			if objectType != "object" {
 				buf.WriteString("=")
 			}
 			buf.WriteByte(blank)
 		}
 	}
 
-	buf.Write(p.output(o.Val))
+	buf.Write(p.output(o.Val, typeSchema))
 
 	if o.LineComment != nil && o.Val.Pos().Line == o.Keys[0].Pos().Line {
 		buf.WriteByte(blank)
@@ -347,7 +352,7 @@ func getValType(n interface{}) string {
 
 // objectType returns the printable HCL form of an object type. An object type
 // begins with a brace and ends with a brace.
-func (p *printer) objectType(o *ast.ObjectType) []byte {
+func (p *printer) objectType(o *ast.ObjectType, typeSchema map[string]interface{}) []byte {
 	defer un(trace(p, "ObjectType"))
 	var buf bytes.Buffer
 	buf.WriteString("{")
@@ -443,7 +448,7 @@ func (p *printer) objectType(o *ast.ObjectType) []byte {
 			// one means a oneliner with out any lead comment
 			// two means a oneliner with lead comment
 			// anything else might be something else
-			cur := lines(string(p.objectItem(item)))
+			cur := lines(string(p.objectItem(item, typeSchema)))
 			if cur > 2 {
 				break
 			}
@@ -496,12 +501,12 @@ func (p *printer) objectType(o *ast.ObjectType) []byte {
 		if len(aligned) >= 1 {
 			p.prev = aligned[len(aligned)-1].Pos()
 
-			items := p.alignedItems(aligned)
+			items := p.alignedItems(aligned, typeSchema)
 			buf.Write(p.indent(items))
 		} else {
 			p.prev = o.List.Items[index].Pos()
 
-			buf.Write(p.indent(p.objectItem(o.List.Items[index])))
+			buf.Write(p.indent(p.objectItem(o.List.Items[index], typeSchema)))
 			index++
 		}
 
@@ -512,7 +517,7 @@ func (p *printer) objectType(o *ast.ObjectType) []byte {
 	return buf.Bytes()
 }
 
-func (p *printer) alignedItems(items []*ast.ObjectItem) []byte {
+func (p *printer) alignedItems(items []*ast.ObjectItem, typeSchema map[string]interface{}) []byte {
 	var buf bytes.Buffer
 
 	// find the longest key and value length, needed for alignment
@@ -520,7 +525,7 @@ func (p *printer) alignedItems(items []*ast.ObjectItem) []byte {
 	var longestValLen int // longest value length
 	for _, item := range items {
 		key := len(item.Keys[0].Token.Text)
-		val := len(p.output(item.Val))
+		val := len(p.output(item.Val, typeSchema))
 
 		if key > longestKeyLen {
 			longestKeyLen = key
@@ -553,7 +558,7 @@ func (p *printer) alignedItems(items []*ast.ObjectItem) []byte {
 			}
 		}
 
-		val := p.output(item.Val)
+		val := p.output(item.Val, typeSchema)
 		valLen := len(val)
 		buf.Write(val)
 
@@ -577,9 +582,9 @@ func (p *printer) alignedItems(items []*ast.ObjectItem) []byte {
 }
 
 // list returns the printable HCL form of an list type.
-func (p *printer) list(l *ast.ListType) []byte {
+func (p *printer) list(l *ast.ListType, typeSchema map[string]interface{}) []byte {
 	if p.isSingleLineList(l) {
-		return p.singleLineList(l)
+		return p.singleLineList(l, typeSchema)
 	}
 
 	var buf bytes.Buffer
@@ -617,7 +622,7 @@ func (p *printer) list(l *ast.ListType) []byte {
 		}
 
 		// also indent each line
-		val := p.output(item)
+		val := p.output(item, typeSchema)
 		curLen := len(val)
 		buf.Write(p.indent(val))
 
@@ -687,7 +692,7 @@ func (printer) isSingleLineList(l *ast.ListType) bool {
 
 // singleLineList prints a simple single line list.
 // For a definition of "simple", see isSingleLineList above.
-func (p *printer) singleLineList(l *ast.ListType) []byte {
+func (p *printer) singleLineList(l *ast.ListType, typeSchema map[string]interface{}) []byte {
 	buf := &bytes.Buffer{}
 
 	buf.WriteString("[")
@@ -697,7 +702,7 @@ func (p *printer) singleLineList(l *ast.ListType) []byte {
 		}
 
 		// Output the item itself
-		buf.Write(p.output(item))
+		buf.Write(p.output(item, typeSchema))
 
 		// The heredoc marker needs to be at the end of line.
 		if lit, ok := item.(*ast.LiteralType); ok && lit.Token.Type == token.HEREDOC {

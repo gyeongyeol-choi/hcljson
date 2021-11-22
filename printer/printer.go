@@ -2,12 +2,10 @@
 package printer
 
 import (
-	"bytes"
 	"io"
 	"text/tabwriter"
 
 	"github.com/hashicorp/hcl/hcl/ast"
-	"github.com/hashicorp/hcl/hcl/parser"
 )
 
 var DefaultConfig = Config{
@@ -19,7 +17,7 @@ type Config struct {
 	SpacesWidth int // if set, it will use spaces instead of tabs for alignment
 }
 
-func (c *Config) Fprint(output io.Writer, node ast.Node) error {
+func (c *Config) Fprint(output io.Writer, node ast.Node, typeSchema map[string]interface{}) error {
 	p := &printer{
 		cfg:                *c,
 		comments:           make([]*ast.CommentGroup, 0),
@@ -29,7 +27,7 @@ func (c *Config) Fprint(output io.Writer, node ast.Node) error {
 
 	p.collectComments(node)
 
-	if _, err := output.Write(p.unindent(p.output(node))); err != nil {
+	if _, err := output.Write(p.unindent(p.output(node, typeSchema))); err != nil {
 		return err
 	}
 
@@ -44,23 +42,23 @@ func (c *Config) Fprint(output io.Writer, node ast.Node) error {
 
 // Fprint "pretty-prints" an HCL node to output
 // It calls Config.Fprint with default settings.
-func Fprint(output io.Writer, node ast.Node) error {
-	return DefaultConfig.Fprint(output, node)
+func Fprint(output io.Writer, node ast.Node, typeSchema map[string]interface{}) error {
+	return DefaultConfig.Fprint(output, node, typeSchema)
 }
 
 // Format formats src HCL and returns the result.
-func Format(src []byte) ([]byte, error) {
-	node, err := parser.Parse(src)
-	if err != nil {
-		return nil, err
-	}
+// func Format(src []byte) ([]byte, error) {
+// 	node, err := parser.Parse(src)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	var buf bytes.Buffer
-	if err := DefaultConfig.Fprint(&buf, node); err != nil {
-		return nil, err
-	}
+// 	var buf bytes.Buffer
+// 	if err := DefaultConfig.Fprint(&buf, node); err != nil {
+// 		return nil, err
+// 	}
 
-	// Add trailing newline to result
-	buf.WriteString("\n")
-	return buf.Bytes(), nil
-}
+// 	// Add trailing newline to result
+// 	buf.WriteString("\n")
+// 	return buf.Bytes(), nil
+// }
