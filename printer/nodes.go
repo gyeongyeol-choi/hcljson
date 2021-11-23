@@ -289,14 +289,15 @@ func (p *printer) objectItem(o *ast.ObjectItem, typeSchema map[string]interface{
 
 		// MEMO : 스키마 조회를 위한 **##** 구분자 들어간 키값 들어왔을 때, 가장 마지막 단어만 실제 key로 지정
 		if strings.Contains(rawKey, "**##**") {
-			objectType = typeSchema[rawKey].(string)
+			if typeSchema[rawKey] != nil {
+				objectType = typeSchema[rawKey].(string)
+			}
 			var strSplit = strings.Split(rawKey, "**##**")
 			rawKey = strSplit[len(strSplit)-1]
 		}
 
 		buf.WriteString(rawKey)
 		buf.WriteByte(blank)
-
 		// reach end of key
 		if o.Assign.IsValid() && i == len(o.Keys)-1 && len(o.Keys) == 1 {
 			// MEMO : object타입일 땐 = 표시 없어야 됨. 그 외의 type들이나 typeSchema에 정의안된 필드들은 = 붙여줌.
