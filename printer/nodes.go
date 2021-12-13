@@ -183,6 +183,7 @@ func (p *printer) output(n interface{}, typeSchema map[string]interface{}) []byt
 			}
 
 			buf.Write(p.output(t.Items[index], typeSchema))
+
 			if index != len(t.Items)-1 {
 				// Always write a newline to separate us from the next item
 				buf.WriteByte(newline)
@@ -223,7 +224,10 @@ func (p *printer) output(n interface{}, typeSchema map[string]interface{}) []byt
 		fmt.Println("\033[1;33m[ListType]\033[0m", t.List)
 		buf.Write(p.list(t, typeSchema))
 	case *ast.ObjectType:
-		fmt.Println("\033[1;36m[ObjectType]\033[0m", t.List.Items[0].Keys[0])
+		// MEMO: 빈 프로퍼티를 가진 리소스 출력 시 오류가 발생하지 않도록 예외 처리
+		if len(t.List.Items) != 0 {
+			fmt.Println("\033[1;36m[ObjectType]\033[0m", t.List.Items[0].Keys[0])
+		}
 		buf.Write(p.objectType(t, typeSchema))
 	default:
 		fmt.Printf(" unknown type: %T\n", n)
