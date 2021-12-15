@@ -137,6 +137,22 @@ func flattenObjectType(
 				}
 				return items, frontier
 			}
+
+			// MEMO: terraform keyword의 경우 하위 속성과 무관하게 역변환 결과물이 terraform A B {} 형태로 나오면 안됨.
+			// MEMO: 무조건 terraform {} 형태로 나오게 하기 위해 아래 구문 추가함.
+			if len(item.Keys) > 0 && item.Keys[0].Token.Text == "\"terraform\"" {
+				if !contains(items, item) {
+					items = append(items, item)
+				}
+				return items, frontier
+			}
+			// MEMO: terraform block 내부 하위 속성에 대한 예외 처리 추가
+			if len(item.Keys) > 0 && item.Keys[0].Token.Text == "\"terraform**##**required_providers\"" {
+				if !contains(items, item) {
+					items = append(items, item)
+				}
+				return items, frontier
+			}
 		}
 	}
 

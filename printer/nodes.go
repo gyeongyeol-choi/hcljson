@@ -310,7 +310,8 @@ func (p *printer) objectItem(o *ast.ObjectItem, typeSchema map[string]interface{
 		// reach end of key
 		if o.Assign.IsValid() && i == len(o.Keys)-1 && len(o.Keys) == 1 {
 			// MEMO : object타입일 땐 = 표시 없어야 됨. 그 외의 type들이나 typeSchema에 정의안된 필드들은 = 붙여줌.
-			if objectType != "object" {
+			// MEMO : terraform keyword에 대한 HCL 역파싱 시 = 표시 없도록 수정
+			if objectType != "object" && o.Keys[0].Token.Text != "\"terraform\"" {
 				buf.WriteString("=")
 			}
 			buf.WriteByte(blank)

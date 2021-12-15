@@ -139,21 +139,21 @@ func regenJson(input []byte) []byte {
 								}
 								delete(data3, tmp3)
 							}
-							//data2[key] = data3
-							data2[tmp2] = data3
+							data2[key] = data3
+							//data2[tmp2] = data3
 						} else {
-							//data2[key] = value
-							data2[tmp2] = value
+							data2[key] = value
+							//data2[tmp2] = value
 						}
-						//delete(data2, tmp2)
+						delete(data2, tmp2)
 					}
-					//data1[key] = data2
-					data1[tmp1] = data2
+					data1[key] = data2
+					//data1[tmp1] = data2
 				} else {
-					//data1[key] = value
-					data1[tmp1] = value
+					data1[key] = value
+					//data1[tmp1] = value
 				}
-				//delete(data1, tmp1)
+				delete(data1, tmp1)
 			}
 			//data[key] = data1
 			data[tmp] = data1
@@ -161,6 +161,7 @@ func regenJson(input []byte) []byte {
 			//data[key] = value
 			data[tmp] = value
 		}
+		//delete(data, tmp)
 	}
 	fmt.Println(data)
 	output, _ := json.Marshal(data)
