@@ -298,6 +298,11 @@ func (p *printer) objectItem(o *ast.ObjectItem, typeSchema map[string]interface{
 			}
 			var strSplit = strings.Split(rawKey, "**##**")
 			rawKey = strSplit[len(strSplit)-1]
+
+			// MEMO : **##** 구분자 기반 문자열 분할 시 Double Quotes 누락에 대한 예외 처리 적용
+			if !strings.HasPrefix(rawKey, "\"") && strings.HasSuffix(rawKey, "\"") {
+				rawKey = "\"" + rawKey
+			}
 		}
 
 		buf.WriteString(rawKey)
